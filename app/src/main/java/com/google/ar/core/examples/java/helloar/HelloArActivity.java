@@ -16,14 +16,25 @@
 
 package com.google.ar.core.examples.java.helloar;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.media.Image;
+import android.net.Uri;
 import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.Anchor;
@@ -66,12 +77,16 @@ import com.ibosoninnov.objectanchorsdk.QuaternionUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * This is a simple example that shows how to create an augmented reality (AR) application using the
@@ -158,6 +173,13 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
+    ImageButton saveButton = findViewById(R.id.save_button);
+    saveButton.setOnClickListener(new View.OnClickListener() {
+      @Override
+      public void onClick(View view) {
+        saveCurrentSceneAsPCD();
+      }
+    });
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -695,10 +717,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     config.setLightEstimationMode(Config.LightEstimationMode.ENVIRONMENTAL_HDR);
     if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
       config.setDepthMode(Config.DepthMode.AUTOMATIC);
+      depthSettings.setUseDepthForOcclusion(true);
     } else {
       config.setDepthMode(Config.DepthMode.DISABLED);
+      depthSettings.setUseDepthForOcclusion(false);
+      depthSettings.setDepthColorVisualizationEnabled(false);
+      showDetectionUnsupportedMessage();
     }
     config.setInstantPlacementMode(InstantPlacementMode.DISABLED);
+    config.setFocusMode(Config.FocusMode.AUTO);
     session.configure(config);
 
     initObjectAnchor(session);
@@ -722,7 +749,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           runOnUiThread(new Runnable() {
             @Override
             public void run() {
-              if(objectAnchor.detectionCount>2){
+              Toast.makeText(HelloArActivity.this, "Object found", Toast.LENGTH_SHORT).show();
+              if(objectAnchor.detectionCount>2){  //Detecting a few times to ensure accurate alignment
                 objectAnchor.StopScan();
               }
               float[] pos = new float[]{transformation[3], transformation[7], transformation[11]};
@@ -742,9 +770,90 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     });
 
-    objectAnchor.inputTemplatePCD(this, R.raw.washbasin);
+    objectAnchor.inputTemplatePCD(this, R.raw.template);
 
     objectAnchor.StartScan();
+  }
+
+  private void showDetectionUnsupportedMessage(){
+    // Asks the user whether they want to use depth-based occlusion.
+    new AlertDialog.Builder(this)
+            .setTitle(R.string.options_title_without_depth)
+            .setMessage(R.string.require_depth_description)
+            .setPositiveButton(
+                    R.string.quit,
+                    (DialogInterface dialog, int which) -> {
+                      finish();
+                    })
+            .setNegativeButton(
+                    R.string.ignore,
+                    (DialogInterface dialog, int which) -> {
+
+                    })
+            .show();
+  }
+
+  private void saveCurrentSceneAsPCD(){
+    if(objectAnchor != null && objectAnchor.scenePoints != null && objectAnchor.scenePoints.length > 1000){
+      StringBuilder data = new StringBuilder();
+      int vertexCount = 0;
+      for(int i=0; i<objectAnchor.scenePoints.length; i+=3){
+        data.append(objectAnchor.scenePoints[i]).append(" ").append(objectAnchor.scenePoints[i+1]).append(" ").append(objectAnchor.scenePoints[i+2]).append("\n");
+        vertexCount++;
+      }
+      StringBuilder header = new StringBuilder();
+      header.append("# .PCD v.7 - Point Cloud Data file format\n" +
+              "VERSION .7\n" +
+              "FIELDS x y z\n" +
+              "SIZE 4 4 4\n" +
+              "TYPE F F F\n" +
+              "COUNT 1 1 1\n" +
+              "WIDTH "+vertexCount+"\n"+
+              "HEIGHT 1\n" +
+              "VIEWPOINT 0 0 0 1 0 0 0\n" +
+              "POINTS "+vertexCount+"\n"+
+              "DATA ascii\n");
+      header.append(data.toString());
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
+        Date now = new Date();
+        String fileName = formatter.format(now) + ".pcd";
+        saveFileToDownloads(HelloArActivity.this, fileName, header.toString());
+        Toast.makeText(HelloArActivity.this, "Saved to downloads", Toast.LENGTH_SHORT).show();
+      }else{
+        Toast.makeText(HelloArActivity.this, "Not saved", Toast.LENGTH_SHORT).show();
+      }
+    }else{
+      Toast.makeText(HelloArActivity.this, "Not enough points", Toast.LENGTH_SHORT).show();
+    }
+  }
+
+  @RequiresApi(api = Build.VERSION_CODES.Q)
+  private void saveFileToDownloads(Context context, String fileName, String fileContent) {
+    ContentValues contentValues = new ContentValues();
+    contentValues.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+    contentValues.put(MediaStore.Downloads.MIME_TYPE, "application/pcd");
+    contentValues.put(MediaStore.Downloads.IS_PENDING, 1);
+
+    ContentResolver resolver = context.getContentResolver();
+    Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+    Uri fileUri = resolver.insert(collection, contentValues);
+
+    if (fileUri != null) {
+      try (OutputStream outputStream = resolver.openOutputStream(fileUri)) {
+        if (outputStream != null) {
+          outputStream.write(fileContent.getBytes());
+          outputStream.flush();
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+
+      contentValues.clear();
+      contentValues.put(MediaStore.Downloads.IS_PENDING, 0);
+      resolver.update(fileUri, contentValues, null, null);
+    }
   }
 
 
