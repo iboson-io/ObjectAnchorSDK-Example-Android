@@ -6,7 +6,7 @@ Detects 3D objects using point clouds from ARCore depth images
 This project shows a sample usage of the Object Anchor SDK with [ARCore - HelloAR Java](https://github.com/google-ar/arcore-android-sdk) 
 
 ## Steps to add Object Anchor SDK to existing project
-- Add objectanchorsdk.aar to current project
+- Add [objectanchorsdk.aar](https://github.com/iboson-io/ObjectAnchorSDK-ARCoreExample-Android/releases) to current project
 - Create an ObjectAnchor object in activity and add below code
 ```
 ObjectAnchor objectAnchor;
