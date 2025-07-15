@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.ar.core.examples.java.helloar;
+package com.iboson.objectdetection.helloar;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -31,7 +31,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
@@ -49,21 +49,21 @@ import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingFailureReason;
 import com.google.ar.core.TrackingState;
-import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
-import com.google.ar.core.examples.java.common.helpers.DepthSettings;
-import com.google.ar.core.examples.java.common.helpers.DisplayRotationHelper;
-import com.google.ar.core.examples.java.common.helpers.FullScreenHelper;
-import com.google.ar.core.examples.java.common.helpers.SnackbarHelper;
-import com.google.ar.core.examples.java.common.helpers.TrackingStateHelper;
-import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
-import com.google.ar.core.examples.java.common.samplerender.GLError;
-import com.google.ar.core.examples.java.common.samplerender.Mesh;
-import com.google.ar.core.examples.java.common.samplerender.SampleRender;
-import com.google.ar.core.examples.java.common.samplerender.Shader;
-import com.google.ar.core.examples.java.common.samplerender.Texture;
-import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
-import com.google.ar.core.examples.java.common.samplerender.arcore.BackgroundRenderer;
-import com.google.ar.core.examples.java.common.samplerender.arcore.SpecularCubemapFilter;
+import com.iboson.objectdetection.common.helpers.CameraPermissionHelper;
+import com.iboson.objectdetection.common.helpers.DepthSettings;
+import com.iboson.objectdetection.common.helpers.DisplayRotationHelper;
+import com.iboson.objectdetection.common.helpers.FullScreenHelper;
+import com.iboson.objectdetection.common.helpers.SnackbarHelper;
+import com.iboson.objectdetection.common.helpers.TrackingStateHelper;
+import com.iboson.objectdetection.common.samplerender.Framebuffer;
+import com.iboson.objectdetection.common.samplerender.GLError;
+import com.iboson.objectdetection.common.samplerender.Mesh;
+import com.iboson.objectdetection.common.samplerender.SampleRender;
+import com.iboson.objectdetection.common.samplerender.Shader;
+import com.iboson.objectdetection.common.samplerender.Texture;
+import com.iboson.objectdetection.common.samplerender.VertexBuffer;
+import com.iboson.objectdetection.common.samplerender.arcore.BackgroundRenderer;
+import com.iboson.objectdetection.common.samplerender.arcore.SpecularCubemapFilter;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.NotYetAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -137,9 +137,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final DepthSettings depthSettings = new DepthSettings();
 
   // Point Cloud
-  private VertexBuffer pointCloudVertexBuffer, objectPointsVertexBuffer;
-  private Mesh pointCloudMesh, objectPointsMesh;
-  private Shader pointCloudShader, objectPointsShader;
+  private VertexBuffer pointCloudVertexBuffer;
+  private Mesh pointCloudMesh;
+  private Shader pointCloudShader;
+  private Shader pointCloudShaderObject;
+  private VertexBuffer pointCloudVertexBufferObject;
+  private Mesh pointCloudMeshObject;
 
   // Virtual object (ARCore pawn)
   private Mesh virtualObjectMesh;
@@ -164,6 +167,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] worldLightDirection = {0.0f, 0.0f, 0.0f, 0.0f};
   private final float[] viewLightDirection = new float[4]; // view x world light direction
 
+  public float[] scenePoints;
+  public float[] objectPoints;
+
+  TextView statusText;
+
 
   ObjectAnchor objectAnchor;
 
@@ -172,8 +180,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
+    statusText = findViewById(R.id.statusText);
     displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
-    ImageButton saveButton = findViewById(R.id.save_button);
+    Button saveButton = findViewById(R.id.saveButton);
     saveButton.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
@@ -376,8 +385,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
           new Mesh(
               render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffers);
 
-      //Object points
-      objectPointsShader =
+      pointCloudShaderObject =
               Shader.createFromAssets(
                               render,
                               "shaders/point_cloud.vert",
@@ -385,14 +393,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
                               /* defines= */ null)
                       .setVec4(
                               "u_Color", new float[] {0.0f, 1.0f, 0.0f, 1.0f})
-                      .setFloat("u_PointSize", 8.0f);
+                      .setFloat("u_PointSize", 6.0f);
       // three entries per vertex: X, Y, Z
-      objectPointsVertexBuffer =
+      pointCloudVertexBufferObject =
               new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 3, /* entries= */ null);
-      final VertexBuffer[] objectPointsVertexBuffers = {objectPointsVertexBuffer};
-      objectPointsMesh =
+      final VertexBuffer[] pointCloudVertexBuffersObject = {pointCloudVertexBufferObject};
+      pointCloudMeshObject =
               new Mesh(
-                      render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, objectPointsVertexBuffers);
+                      render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffersObject);
+
 
       // Virtual object to render (ARCore pawn)
       virtualObjectAlbedoTexture =
@@ -545,12 +554,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Visualize tracked points.
     // Use try-with-resources to automatically release the point cloud.
     // Create a direct ByteBuffer and convert it to FloatBuffer
-    if(objectAnchor != null && objectAnchor.scenePoints != null) {
-      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(objectAnchor.scenePoints.length * Float.BYTES);
+    if(objectAnchor != null && scenePoints != null) {
+      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(scenePoints.length * Float.BYTES);
       byteBuffer.order(ByteOrder.nativeOrder());
       FloatBuffer scenePointsBuffer = byteBuffer.asFloatBuffer();
       // Populate the FloatBuffer with the float array
-      scenePointsBuffer.put(objectAnchor.scenePoints);
+      scenePointsBuffer.put(scenePoints);
       // Flip the buffer to prepare it for reading
       scenePointsBuffer.flip();
       //FloatBuffer scenePointsBuffer = FloatBuffer.wrap(points);
@@ -562,19 +571,19 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       byteBuffer.clear();
     }
 
-    if(objectAnchor != null && objectAnchor.objectPoints != null) {
-      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(objectAnchor.objectPoints.length * Float.BYTES);
+    if(objectAnchor != null && objectPoints != null) {
+      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(objectPoints.length * Float.BYTES);
       byteBuffer.order(ByteOrder.nativeOrder());
       FloatBuffer objectPointsBuffer = byteBuffer.asFloatBuffer();
       // Populate the FloatBuffer with the float array
-      objectPointsBuffer.put(objectAnchor.objectPoints);
+      objectPointsBuffer.put(objectPoints);
       // Flip the buffer to prepare it for reading
       objectPointsBuffer.flip();
       //FloatBuffer scenePointsBuffer = FloatBuffer.wrap(points);
-      objectPointsVertexBuffer.set(objectPointsBuffer);
+      pointCloudVertexBufferObject.set(objectPointsBuffer);
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-      objectPointsShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
-      render.draw(objectPointsMesh, objectPointsShader);
+      pointCloudShaderObject.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
+      render.draw(pointCloudMeshObject, pointCloudShaderObject);
       objectPointsBuffer.clear();
       byteBuffer.clear();
     }
@@ -621,34 +630,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Compose the virtual scene with the background.
     backgroundRenderer.drawVirtualScene(render, virtualSceneFramebuffer, Z_NEAR, Z_FAR);
-  }
-
-
-  /**
-   * Shows a pop-up dialog on the first call, determining whether the user wants to enable
-   * depth-based occlusion. The result of this dialog can be retrieved with useDepthForOcclusion().
-   */
-  private void showOcclusionDialogIfNeeded() {
-    boolean isDepthSupported = session.isDepthModeSupported(Config.DepthMode.AUTOMATIC);
-    if (!depthSettings.shouldShowDepthEnableDialog() || !isDepthSupported) {
-      return; // Don't need to show dialog.
-    }
-
-    // Asks the user whether they want to use depth-based occlusion.
-    new AlertDialog.Builder(this)
-        .setTitle(R.string.options_title_with_depth)
-        .setMessage(R.string.depth_use_explanation)
-        .setPositiveButton(
-            R.string.button_text_enable_depth,
-            (DialogInterface dialog, int which) -> {
-              depthSettings.setUseDepthForOcclusion(true);
-            })
-        .setNegativeButton(
-            R.string.button_text_disable_depth,
-            (DialogInterface dialog, int which) -> {
-              depthSettings.setUseDepthForOcclusion(false);
-            })
-        .show();
   }
 
 
@@ -734,15 +715,30 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private void initObjectAnchor(Session session){
     objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
       @Override
+      public void onInitialized() {
+        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, "model00012", "2bb68e48-e17c-48a6-9943-568b852d39e3");
+        objectAnchor.StartScan();
+      }
+      @Override
       public void onScenePointsUpdated(float[] points) {
-
+        scenePoints = points;
       }
 
       @Override
-      public void onObjectPointsFound(float[] objectPoints) {
-
+      public void onObjectPointsUpdated(float[] points) {
+        objectPoints = points;
       }
 
+      @Override
+      public void onStatusUpdated(String status) {
+        Log.d(TAG, status);
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            statusText.setText(status);
+          }
+        });
+      }
       @Override
       public void onObjectTransformationUpdated(float[] transformation) {
         if(objectAnchor.statusString != null){
@@ -770,9 +766,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     });
 
-    objectAnchor.inputTemplatePCD(this, R.raw.template);
-
-    objectAnchor.StartScan();
+    objectAnchor.setConfidence(0.95f);
+    objectAnchor.setMaxScanDistance(2.5f);
   }
 
   private void showDetectionUnsupportedMessage(){
@@ -794,11 +789,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   }
 
   private void saveCurrentSceneAsPCD(){
-    if(objectAnchor != null && objectAnchor.scenePoints != null && objectAnchor.scenePoints.length > 1000){
+    if(objectAnchor != null && scenePoints != null && scenePoints.length > 1000){
       StringBuilder data = new StringBuilder();
       int vertexCount = 0;
-      for(int i=0; i<objectAnchor.scenePoints.length; i+=3){
-        data.append(objectAnchor.scenePoints[i]).append(" ").append(objectAnchor.scenePoints[i+1]).append(" ").append(objectAnchor.scenePoints[i+2]).append("\n");
+      for(int i=0; i<scenePoints.length; i+=3){
+        data.append(scenePoints[i]).append(" ").append(scenePoints[i+1]).append(" ").append(scenePoints[i+2]).append("\n");
         vertexCount++;
       }
       StringBuilder header = new StringBuilder();

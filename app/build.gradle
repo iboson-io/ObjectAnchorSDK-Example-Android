@@ -16,10 +16,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.google.ar.core.examples.java.helloar"
+    namespace "com.iboson.objectdetection.helloar"
     compileSdkVersion 35
     defaultConfig {
-        applicationId "com.google.ar.core.examples.java.helloar"
+        applicationId "com.iboson.objectdetection.helloar"
 
         // AR Optional apps must declare minSdkVersion >= 14.
         // AR Required apps must declare minSdkVersion >= 24.

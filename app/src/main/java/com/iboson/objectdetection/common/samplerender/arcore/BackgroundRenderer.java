@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.ar.core.examples.java.common.samplerender.arcore;
+package com.iboson.objectdetection.common.samplerender.arcore;
 
 import android.media.Image;
 import android.opengl.GLES30;
 import com.google.ar.core.Coordinates2d;
 import com.google.ar.core.Frame;
-import com.google.ar.core.examples.java.common.samplerender.Framebuffer;
-import com.google.ar.core.examples.java.common.samplerender.Mesh;
-import com.google.ar.core.examples.java.common.samplerender.SampleRender;
-import com.google.ar.core.examples.java.common.samplerender.Shader;
-import com.google.ar.core.examples.java.common.samplerender.Texture;
-import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
+import com.iboson.objectdetection.common.samplerender.Framebuffer;
+import com.iboson.objectdetection.common.samplerender.Mesh;
+import com.iboson.objectdetection.common.samplerender.SampleRender;
+import com.iboson.objectdetection.common.samplerender.Shader;
+import com.iboson.objectdetection.common.samplerender.Texture;
+import com.iboson.objectdetection.common.samplerender.VertexBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

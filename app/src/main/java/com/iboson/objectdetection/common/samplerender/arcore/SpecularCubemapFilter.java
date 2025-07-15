@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.ar.core.examples.java.common.samplerender.arcore;
+package com.iboson.objectdetection.common.samplerender.arcore;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -22,12 +22,12 @@ import android.media.Image;
 import android.opengl.GLES30;
 import android.util.Log;
 import com.google.ar.core.ImageFormat;
-import com.google.ar.core.examples.java.common.samplerender.GLError;
-import com.google.ar.core.examples.java.common.samplerender.Mesh;
-import com.google.ar.core.examples.java.common.samplerender.SampleRender;
-import com.google.ar.core.examples.java.common.samplerender.Shader;
-import com.google.ar.core.examples.java.common.samplerender.Texture;
-import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
+import com.iboson.objectdetection.common.samplerender.GLError;
+import com.iboson.objectdetection.common.samplerender.Mesh;
+import com.iboson.objectdetection.common.samplerender.SampleRender;
+import com.iboson.objectdetection.common.samplerender.Shader;
+import com.iboson.objectdetection.common.samplerender.Texture;
+import com.iboson.objectdetection.common.samplerender.VertexBuffer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;

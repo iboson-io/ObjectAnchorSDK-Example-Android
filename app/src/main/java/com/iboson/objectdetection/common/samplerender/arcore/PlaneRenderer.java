@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.ar.core.examples.java.common.samplerender.arcore;
+package com.iboson.objectdetection.common.samplerender.arcore;
 
 import android.opengl.Matrix;
 import com.google.ar.core.Camera;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Pose;
 import com.google.ar.core.TrackingState;
-import com.google.ar.core.examples.java.common.samplerender.IndexBuffer;
-import com.google.ar.core.examples.java.common.samplerender.Mesh;
-import com.google.ar.core.examples.java.common.samplerender.SampleRender;
-import com.google.ar.core.examples.java.common.samplerender.Shader;
-import com.google.ar.core.examples.java.common.samplerender.Shader.BlendFactor;
-import com.google.ar.core.examples.java.common.samplerender.Texture;
-import com.google.ar.core.examples.java.common.samplerender.VertexBuffer;
+import com.iboson.objectdetection.common.samplerender.IndexBuffer;
+import com.iboson.objectdetection.common.samplerender.Mesh;
+import com.iboson.objectdetection.common.samplerender.SampleRender;
+import com.iboson.objectdetection.common.samplerender.Shader;
+import com.iboson.objectdetection.common.samplerender.Shader.BlendFactor;
+import com.iboson.objectdetection.common.samplerender.Texture;
+import com.iboson.objectdetection.common.samplerender.VertexBuffer;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
