@@ -12,17 +12,26 @@ This project shows a sample usage of the Object Anchor SDK with [ARCore - HelloA
 ObjectAnchor objectAnchor;
 ```
 ```
-  objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
+   objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
+      @Override
+      public void onInitialized() {
+        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, "MODEL_ID", "TOKEN");
+        objectAnchor.StartScan();
+      }
       @Override
       public void onScenePointsUpdated(float[] points) {
         //Scanned points x,y,z,x,y,z... format
       }
 
       @Override
-      public void onObjectPointsFound(float[] objectPoints) {
+      public void onObjectPointsUpdated(float[] points) {
         //Aligned points x,y,z,x,y,z... format
       }
 
+      @Override
+      public void onStatusUpdated(String status) {
+        //Scan status
+      }
       @Override
       public void onObjectTransformationUpdated(float[] transformation) {
         //Transformation matrix4x4
@@ -30,9 +39,8 @@ ObjectAnchor objectAnchor;
       }
     });
 
-    objectAnchor.inputTemplatePCD(this, R.raw.template);  //.pcd file ASCII format or can be input as List<float> x,y,z,x,y,z...
-
-    objectAnchor.StartScan();
+    objectAnchor.setConfidence(0.95f);
+    objectAnchor.setMaxScanDistance(2.5f);
 ```
 ```
   @Override
