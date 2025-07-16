@@ -20,6 +20,7 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.media.Image;
 import android.net.Uri;
 import android.opengl.GLES30;
@@ -171,14 +172,23 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   public float[] objectPoints;
 
   TextView statusText;
-
-
   ObjectAnchor objectAnchor;
+  String MODEL_ID = "";//Fill in your modelId here or get it by parsing QRScannerActivity
+  String TOKEN = ""; //Fill in your token here or get it by parsing QRScannerActivity
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    // Get the modelId and token from the intent
+    Intent intent = getIntent();
+    if (intent != null) {
+        MODEL_ID = intent.getStringExtra("modelId");
+        TOKEN = intent.getStringExtra("token");
+    }
+    
+
     surfaceView = findViewById(R.id.surfaceview);
     statusText = findViewById(R.id.statusText);
     displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
@@ -716,7 +726,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
       @Override
       public void onInitialized() {
-        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, "model00012", "2bb68e48-e17c-48a6-9943-568b852d39e3");
+        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, MODEL_ID, TOKEN);
         objectAnchor.StartScan();
       }
       @Override
