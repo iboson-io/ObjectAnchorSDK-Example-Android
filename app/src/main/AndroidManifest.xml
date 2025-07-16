@@ -41,15 +41,22 @@
       tools:ignore="GoogleAppIndexingWarning">
 
     <activity
-        android:name="com.iboson.objectdetection.helloar.HelloArActivity"
+        android:name="com.iboson.objectdetection.helloar.QRScannerActivity"
         android:configChanges="orientation|screenSize"
         android:exported="true"
         android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:screenOrientation="locked">
+        android:screenOrientation="portrait">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
+    </activity>
+    <activity
+        android:name="com.iboson.objectdetection.helloar.HelloArActivity"
+        android:configChanges="orientation|screenSize"
+        android:exported="false"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:screenOrientation="portrait">
     </activity>
     <!-- Indicates whether "Google Play Services for AR" (ARCore) is "required" or "optional". -->
     <meta-data android:name="com.google.ar.core" android:value="required" />
