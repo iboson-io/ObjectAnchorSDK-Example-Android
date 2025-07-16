@@ -140,7 +140,7 @@ public class QRScannerActivity extends AppCompatActivity {
             // Try to parse as JSON
             JSONObject jsonObject = new JSONObject(qrContent);
             String modelId = jsonObject.getString("modelId");
-            String token = jsonObject.getString("token");
+            String token = jsonObject.getString("token");   //Demo app token expires in few hours scan immediately after uploading a model
             detected = true;
 
             // Create an intent to start HelloArActivity
