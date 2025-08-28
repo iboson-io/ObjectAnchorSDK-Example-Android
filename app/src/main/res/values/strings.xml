@@ -30,7 +30,4 @@
   <string-array translatable="false" name="instant_placement_options_array">
     <item>Enable Instant Placement</item>
   </string-array>
-  <string translatable="false" name="require_depth_description">3D object detection requires depth data to function properly.</string>
-  <string translatable="false" name="quit">Quit</string>
-  <string translatable="false" name="ignore">Ignore</string>
 </resources>

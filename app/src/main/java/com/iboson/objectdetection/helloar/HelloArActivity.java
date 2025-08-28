@@ -192,13 +192,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     surfaceView = findViewById(R.id.surfaceview);
     statusText = findViewById(R.id.statusText);
     displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
-    Button saveButton = findViewById(R.id.saveButton);
-    saveButton.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View view) {
-        saveCurrentSceneAsPCD();
-      }
-    });
 
     // Set up renderer.
     render = new SampleRender(surfaceView, this, getAssets());
@@ -218,6 +211,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       session.close();
       session = null;
     }
+
+    if(objectAnchor != null)
+      objectAnchor.StopScan();
 
     super.onDestroy();
   }
@@ -713,7 +709,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       config.setDepthMode(Config.DepthMode.DISABLED);
       depthSettings.setUseDepthForOcclusion(false);
       depthSettings.setDepthColorVisualizationEnabled(false);
-      showDetectionUnsupportedMessage();
     }
     config.setInstantPlacementMode(InstantPlacementMode.DISABLED);
     config.setFocusMode(Config.FocusMode.AUTO);
@@ -779,88 +774,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     objectAnchor.setConfidence(0.95f);
     objectAnchor.setMaxScanDistance(2.5f);
   }
-
-  private void showDetectionUnsupportedMessage(){
-    // Asks the user whether they want to use depth-based occlusion.
-    new AlertDialog.Builder(this)
-            .setTitle(R.string.options_title_without_depth)
-            .setMessage(R.string.require_depth_description)
-            .setPositiveButton(
-                    R.string.quit,
-                    (DialogInterface dialog, int which) -> {
-                      finish();
-                    })
-            .setNegativeButton(
-                    R.string.ignore,
-                    (DialogInterface dialog, int which) -> {
-
-                    })
-            .show();
-  }
-
-  private void saveCurrentSceneAsPCD(){
-    if(objectAnchor != null && scenePoints != null && scenePoints.length > 1000){
-      StringBuilder data = new StringBuilder();
-      int vertexCount = 0;
-      for(int i=0; i<scenePoints.length; i+=3){
-        data.append(scenePoints[i]).append(" ").append(scenePoints[i+1]).append(" ").append(scenePoints[i+2]).append("\n");
-        vertexCount++;
-      }
-      StringBuilder header = new StringBuilder();
-      header.append("# .PCD v.7 - Point Cloud Data file format\n" +
-              "VERSION .7\n" +
-              "FIELDS x y z\n" +
-              "SIZE 4 4 4\n" +
-              "TYPE F F F\n" +
-              "COUNT 1 1 1\n" +
-              "WIDTH "+vertexCount+"\n"+
-              "HEIGHT 1\n" +
-              "VIEWPOINT 0 0 0 1 0 0 0\n" +
-              "POINTS "+vertexCount+"\n"+
-              "DATA ascii\n");
-      header.append(data.toString());
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
-        Date now = new Date();
-        String fileName = formatter.format(now) + ".pcd";
-        saveFileToDownloads(HelloArActivity.this, fileName, header.toString());
-        Toast.makeText(HelloArActivity.this, "Saved to downloads", Toast.LENGTH_SHORT).show();
-      }else{
-        Toast.makeText(HelloArActivity.this, "Not saved", Toast.LENGTH_SHORT).show();
-      }
-    }else{
-      Toast.makeText(HelloArActivity.this, "Not enough points", Toast.LENGTH_SHORT).show();
-    }
-  }
-
-  @RequiresApi(api = Build.VERSION_CODES.Q)
-  private void saveFileToDownloads(Context context, String fileName, String fileContent) {
-    ContentValues contentValues = new ContentValues();
-    contentValues.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
-    contentValues.put(MediaStore.Downloads.MIME_TYPE, "application/pcd");
-    contentValues.put(MediaStore.Downloads.IS_PENDING, 1);
-
-    ContentResolver resolver = context.getContentResolver();
-    Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-    Uri fileUri = resolver.insert(collection, contentValues);
-
-    if (fileUri != null) {
-      try (OutputStream outputStream = resolver.openOutputStream(fileUri)) {
-        if (outputStream != null) {
-          outputStream.write(fileContent.getBytes());
-          outputStream.flush();
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      contentValues.clear();
-      contentValues.put(MediaStore.Downloads.IS_PENDING, 0);
-      resolver.update(fileUri, contentValues, null, null);
-    }
-  }
-
 
 }
 

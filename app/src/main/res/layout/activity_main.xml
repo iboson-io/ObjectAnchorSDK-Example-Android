@@ -10,21 +10,12 @@
       android:layout_height="fill_parent"
       android:layout_gravity="top"/>
 
-  <Button
-      android:id="@+id/saveButton"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_centerHorizontal="true"
-      android:layout_alignParentBottom="true"
-      android:layout_margin="25dp"
-      android:text="Save current scene as PCD"/>
-
   <TextView
       android:id="@+id/statusText"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:layout_alignParentStart="true"
-      android:layout_alignParentTop="true"
+      android:layout_alignParentBottom="true"
       android:layout_margin="25dp"
       android:gravity="center"/>
 

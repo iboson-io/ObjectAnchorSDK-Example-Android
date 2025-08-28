@@ -42,7 +42,12 @@ public class QRScannerActivity extends AppCompatActivity {
     private BarcodeScanner barcodeScanner;
     private boolean detected = false;
 
-    
+    @Override
+    protected void onResume(){
+        super.onResume();
+        detected = false;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
