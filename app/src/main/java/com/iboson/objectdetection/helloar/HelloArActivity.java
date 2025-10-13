@@ -172,14 +172,14 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   TextView statusText;
   ObjectAnchor objectAnchor;
   String MODEL_ID = "";//Fill in your modelId here or get it by parsing QRScannerActivity
-  String TOKEN = "82bba987-6401-49db-be26-cf6a7db98b03"; //Fill in your token here
+  String TOKEN = ""; //Fill in your token here
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    // Get the modelId and token from the intent
+    // Get the modelId from the intent
     Intent intent = getIntent();
     if (intent != null) {
         MODEL_ID = intent.getStringExtra("modelId");
