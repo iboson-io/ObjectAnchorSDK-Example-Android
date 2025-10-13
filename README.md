@@ -1,7 +1,7 @@
 # Object Anchor SDK
-Detects 3D objects using point clouds from ARCore depth images
+Detects 3D objects from uploaded 3D models
 
-**Note**: Requires Depth API support - [supported devices](https://developers.google.com/ar/devices)
+**Note**: Requires ARCore support - [supported devices](https://developers.google.com/ar/devices)
 
 This project shows a sample usage of the Object Anchor SDK with [ARCore - HelloAR Java](https://github.com/google-ar/arcore-android-sdk) 
 
@@ -29,8 +29,6 @@ ObjectAnchor objectAnchor;
       }
     });
 
-    objectAnchor.setConfidence(0.95f);
-    objectAnchor.setMaxScanDistance(2.5f);
 ```
 ```
   @Override
