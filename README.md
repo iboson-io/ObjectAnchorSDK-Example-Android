@@ -19,16 +19,6 @@ ObjectAnchor objectAnchor;
         objectAnchor.StartScan();
       }
       @Override
-      public void onScenePointsUpdated(float[] points) {
-        //Scanned points x,y,z,x,y,z... format
-      }
-
-      @Override
-      public void onObjectPointsUpdated(float[] points) {
-        //Aligned points x,y,z,x,y,z... format
-      }
-
-      @Override
       public void onStatusUpdated(String status) {
         //Scan status
       }
