@@ -46,6 +46,7 @@ public class QRScannerActivity extends AppCompatActivity {
     protected void onResume(){
         super.onResume();
         detected = false;
+        checkPermissionsAndStrartQRScanner();
     }
 
     @Override
@@ -60,22 +61,25 @@ public class QRScannerActivity extends AppCompatActivity {
             setResult(RESULT_CANCELED);
             finish();
         });
-        
+
+    }
+
+    private void checkPermissionsAndStrartQRScanner(){
         // Initialize barcode scanner
         BarcodeScannerOptions options = new BarcodeScannerOptions.Builder()
                 .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
                 .build();
         barcodeScanner = BarcodeScanning.getClient(options);
-        
+
         cameraExecutor = Executors.newSingleThreadExecutor();
-        
+
         // Check camera permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED) {
             startCamera();
         } else {
-            ActivityCompat.requestPermissions(this, 
-                    new String[]{Manifest.permission.CAMERA}, 
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.CAMERA},
                     PERMISSION_REQUEST_CODE);
         }
     }
@@ -145,13 +149,11 @@ public class QRScannerActivity extends AppCompatActivity {
             // Try to parse as JSON
             JSONObject jsonObject = new JSONObject(qrContent);
             String modelId = jsonObject.getString("modelId");
-            String token = jsonObject.getString("token");   //Demo app token expires in few hours scan immediately after uploading a model
             detected = true;
 
             // Create an intent to start HelloArActivity
             Intent intent = new Intent(QRScannerActivity.this, HelloArActivity.class);
             intent.putExtra("modelId", modelId);
-            intent.putExtra("token", token);
             startActivity(intent);
         } catch (JSONException e) {
             Log.e(TAG, "Invalid JSON in QR code: " + qrContent, e);
@@ -187,8 +189,8 @@ public class QRScannerActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
+    protected void onPause() {
+        super.onPause();
         stopQRScan();
     }
 } 

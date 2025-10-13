@@ -46,6 +46,7 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Config.InstantPlacementMode;
 import com.google.ar.core.Frame;
 import com.google.ar.core.LightEstimate;
+import com.google.ar.core.PointCloud;
 import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingFailureReason;
@@ -141,9 +142,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private VertexBuffer pointCloudVertexBuffer;
   private Mesh pointCloudMesh;
   private Shader pointCloudShader;
-  private Shader pointCloudShaderObject;
-  private VertexBuffer pointCloudVertexBufferObject;
-  private Mesh pointCloudMeshObject;
+  // Keep track of the last point cloud rendered to avoid updating the VBO if point cloud
+  // was not changed.  Do this using the timestamp since we can't compare PointCloud objects.
+  private long lastPointCloudTimestamp = 0;
 
   // Virtual object (ARCore pawn)
   private Mesh virtualObjectMesh;
@@ -168,13 +169,10 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] worldLightDirection = {0.0f, 0.0f, 0.0f, 0.0f};
   private final float[] viewLightDirection = new float[4]; // view x world light direction
 
-  public float[] scenePoints;
-  public float[] objectPoints;
-
   TextView statusText;
   ObjectAnchor objectAnchor;
   String MODEL_ID = "";//Fill in your modelId here or get it by parsing QRScannerActivity
-  String TOKEN = ""; //Fill in your token here or get it by parsing QRScannerActivity
+  String TOKEN = "82bba987-6401-49db-be26-cf6a7db98b03"; //Fill in your token here
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -185,7 +183,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     Intent intent = getIntent();
     if (intent != null) {
         MODEL_ID = intent.getStringExtra("modelId");
-        TOKEN = intent.getStringExtra("token");
     }
     
 
@@ -385,28 +382,12 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
               .setFloat("u_PointSize", 5.0f);
       // three entries per vertex: X, Y, Z
       pointCloudVertexBuffer =
-          new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 3, /* entries= */ null);
+          new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 4, /* entries= */ null);
       final VertexBuffer[] pointCloudVertexBuffers = {pointCloudVertexBuffer};
       pointCloudMesh =
           new Mesh(
               render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffers);
 
-      pointCloudShaderObject =
-              Shader.createFromAssets(
-                              render,
-                              "shaders/point_cloud.vert",
-                              "shaders/point_cloud.frag",
-                              /* defines= */ null)
-                      .setVec4(
-                              "u_Color", new float[] {0.0f, 1.0f, 0.0f, 1.0f})
-                      .setFloat("u_PointSize", 6.0f);
-      // three entries per vertex: X, Y, Z
-      pointCloudVertexBufferObject =
-              new VertexBuffer(render, /* numberOfEntriesPerVertex= */ 3, /* entries= */ null);
-      final VertexBuffer[] pointCloudVertexBuffersObject = {pointCloudVertexBufferObject};
-      pointCloudMeshObject =
-              new Mesh(
-                      render, Mesh.PrimitiveMode.POINTS, /* indexBuffer= */ null, pointCloudVertexBuffersObject);
 
 
       // Virtual object to render (ARCore pawn)
@@ -559,40 +540,16 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Visualize tracked points.
     // Use try-with-resources to automatically release the point cloud.
-    // Create a direct ByteBuffer and convert it to FloatBuffer
-    if(objectAnchor != null && scenePoints != null) {
-      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(scenePoints.length * Float.BYTES);
-      byteBuffer.order(ByteOrder.nativeOrder());
-      FloatBuffer scenePointsBuffer = byteBuffer.asFloatBuffer();
-      // Populate the FloatBuffer with the float array
-      scenePointsBuffer.put(scenePoints);
-      // Flip the buffer to prepare it for reading
-      scenePointsBuffer.flip();
-      //FloatBuffer scenePointsBuffer = FloatBuffer.wrap(points);
-      pointCloudVertexBuffer.set(scenePointsBuffer);
+    try (PointCloud pointCloud = frame.acquirePointCloud()) {
+      if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
+        pointCloudVertexBuffer.set(pointCloud.getPoints());
+        lastPointCloudTimestamp = pointCloud.getTimestamp();
+      }
       Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
       pointCloudShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
       render.draw(pointCloudMesh, pointCloudShader);
-      scenePointsBuffer.clear();
-      byteBuffer.clear();
     }
 
-    if(objectAnchor != null && objectPoints != null) {
-      ByteBuffer byteBuffer = ByteBuffer.allocateDirect(objectPoints.length * Float.BYTES);
-      byteBuffer.order(ByteOrder.nativeOrder());
-      FloatBuffer objectPointsBuffer = byteBuffer.asFloatBuffer();
-      // Populate the FloatBuffer with the float array
-      objectPointsBuffer.put(objectPoints);
-      // Flip the buffer to prepare it for reading
-      objectPointsBuffer.flip();
-      //FloatBuffer scenePointsBuffer = FloatBuffer.wrap(points);
-      pointCloudVertexBufferObject.set(objectPointsBuffer);
-      Matrix.multiplyMM(modelViewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
-      pointCloudShaderObject.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
-      render.draw(pointCloudMeshObject, pointCloudShaderObject);
-      objectPointsBuffer.clear();
-      byteBuffer.clear();
-    }
 
     //input ARCore frame to object anchor
     if(objectAnchor != null) {
@@ -629,7 +586,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       // Update shader properties and draw
       virtualObjectShader.setMat4("u_ModelView", modelViewMatrix);
       virtualObjectShader.setMat4("u_ModelViewProjection", modelViewProjectionMatrix);
-      virtualObjectShader.setTexture("u_AlbedoTexture", virtualObjectAlbedoTexture);
 
       render.draw(virtualObjectMesh, virtualObjectShader, virtualSceneFramebuffer);
     }
@@ -702,14 +658,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private void configureSession() {
     Config config = session.getConfig();
     config.setLightEstimationMode(Config.LightEstimationMode.ENVIRONMENTAL_HDR);
-    if (session.isDepthModeSupported(Config.DepthMode.AUTOMATIC)) {
-      config.setDepthMode(Config.DepthMode.AUTOMATIC);
-      depthSettings.setUseDepthForOcclusion(true);
-    } else {
-      config.setDepthMode(Config.DepthMode.DISABLED);
-      depthSettings.setUseDepthForOcclusion(false);
-      depthSettings.setDepthColorVisualizationEnabled(false);
-    }
+    config.setDepthMode(Config.DepthMode.DISABLED);
+    depthSettings.setUseDepthForOcclusion(false);
+    depthSettings.setDepthColorVisualizationEnabled(false);
     config.setInstantPlacementMode(InstantPlacementMode.DISABLED);
     config.setFocusMode(Config.FocusMode.AUTO);
     session.configure(config);
@@ -724,16 +675,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, MODEL_ID, TOKEN);
         objectAnchor.StartScan();
       }
-      @Override
-      public void onScenePointsUpdated(float[] points) {
-        scenePoints = points;
-      }
-
-      @Override
-      public void onObjectPointsUpdated(float[] points) {
-        objectPoints = points;
-      }
-
       @Override
       public void onStatusUpdated(String status) {
         Log.d(TAG, status);
@@ -771,8 +712,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       }
     });
 
-    objectAnchor.setConfidence(0.95f);
-    objectAnchor.setMaxScanDistance(2.5f);
   }
 
 }
