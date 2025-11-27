@@ -170,6 +170,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final float[] viewLightDirection = new float[4]; // view x world light direction
 
   TextView statusText;
+  Button scanButton;
   ObjectAnchor objectAnchor;
   String MODEL_ID = "";//Fill in your modelId here or get it by parsing QRScannerActivity
   String TOKEN = ""; //Fill in your token here
@@ -188,6 +189,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     surfaceView = findViewById(R.id.surfaceview);
     statusText = findViewById(R.id.statusText);
+    scanButton = findViewById(R.id.scanButton);
+    scanButton.setOnClickListener(view -> {
+      if(objectAnchor != null) {
+        scanButton.setEnabled(false);
+        objectAnchor.StartScan();
+        statusText.setText("Scanning...");
+      }
+    });
+
     displayRotationHelper = new DisplayRotationHelper(/* context= */ this);
 
     // Set up renderer.
@@ -672,43 +682,41 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
       @Override
       public void onInitialized() {
-        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, MODEL_ID, TOKEN);
-        objectAnchor.StartScan();
+        objectAnchor.setDetectionConfig(MODEL_ID, TOKEN);
       }
       @Override
-      public void onStatusUpdated(String status) {
+      public void onFailed(String status) {
         Log.d(TAG, status);
         runOnUiThread(new Runnable() {
           @Override
           public void run() {
             statusText.setText(status);
+            scanButton.setEnabled(true);
+            Toast.makeText(HelloArActivity.this, "Detection failed", Toast.LENGTH_SHORT).show();
           }
         });
       }
       @Override
-      public void onObjectTransformationUpdated(float[] transformation) {
-        if(objectAnchor.statusString != null){
-          runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-              Toast.makeText(HelloArActivity.this, "Object found", Toast.LENGTH_SHORT).show();
-              if(objectAnchor.detectionCount>2){  //Detecting a few times to ensure accurate alignment
-                objectAnchor.StopScan();
-              }
-              float[] pos = new float[]{transformation[3], transformation[7], transformation[11]};
-              float[] rot = QuaternionUtil.fromRotationMatrix(transformation[0], transformation[1], transformation[2],
-                      transformation[4], transformation[5], transformation[6],
-                      transformation[8], transformation[9], transformation[10]);
-              Pose pose = new Pose(pos, rot);
-              Anchor anchor = session.createAnchor(pose);
-              if(detectedAnchors.size() > 0){
-                detectedAnchors.get(0).detach();
-                detectedAnchors.clear();
-              }
-              detectedAnchors.add(anchor);
+      public void onDetected(float[] transformation) {
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            statusText.setText("Detected");
+            scanButton.setEnabled(true);
+            Toast.makeText(HelloArActivity.this, "Object found", Toast.LENGTH_SHORT).show();
+            float[] pos = new float[]{transformation[3], transformation[7], transformation[11]};
+            float[] rot = QuaternionUtil.fromRotationMatrix(transformation[0], transformation[1], transformation[2],
+                    transformation[4], transformation[5], transformation[6],
+                    transformation[8], transformation[9], transformation[10]);
+            Pose pose = new Pose(pos, rot);
+            Anchor anchor = session.createAnchor(pose);
+            if(detectedAnchors.size() > 0){
+              detectedAnchors.get(0).detach();
+              detectedAnchors.clear();
             }
-          });
-        }
+            detectedAnchors.add(anchor);
+          }
+        });
       }
     });
 
