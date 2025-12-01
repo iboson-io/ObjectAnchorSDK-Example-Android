@@ -15,19 +15,21 @@ ObjectAnchor objectAnchor;
    objectAnchor = new ObjectAnchor(this, session, new ObjectAnchorEvents() {
       @Override
       public void onInitialized() {
-        objectAnchor.setDetectionConfig(ObjectAnchor.DetectionType.POINTCLOUD, "MODEL_ID", "TOKEN");
-        objectAnchor.StartScan();
+        objectAnchor.setDetectionConfig("MODEL_ID", "TOKEN");
       }
       @Override
-      public void onStatusUpdated(String status) {
-        //Scan status
-      }
-      @Override
-      public void onObjectTransformationUpdated(float[] transformation) {
+      public void onDetected(float[] transformation) {
         //Transformation matrix4x4
-        objectAnchor.StopScan();
+      }
+      @Override
+      public void onFailed(String error) {
+        //Failure details
       }
     });
+
+   scanButton?.setOnClickListener {
+      objectAnchor?.StartScan()
+     }
 
 ```
 ```
